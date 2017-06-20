@@ -1,40 +1,68 @@
-<p align="center"><img src="https://laravel.com/assets/img/components/logo-laravel.svg"></p>
+#### Sailthru on 5.3
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
-</p>
+This is an example of a basic implementation of Sailthru using Laravel notificatons. This is working, please see 
+screenshots in PR. I've started with a clean install of Laravel 5.3 to illustrate how easy it is to get going. 
+After generating the standard Laravel Auth scaffold I added 1 new notification class called "WelcomeEmailNotification"
+. This gets triggered after user registration. In practice, you'd implement one class for each 
+type of notification in the app (ProfileReminderNotification, NewsletterWelcomeNotificaiton etc etc). 
 
-## About Laravel
+#### Getting Started
+* Clone Repo
+* Checkout the Sailthru branch (I kept the changes in branch to keep track of easier)
+* Composer install, setup your ENV variables / DB / Mail Settings
+* Insert your `$apiKey` and `$apiSecret` in the `SailthruChannel.php` (or pull from environment variable/config)
+* Register a new user. 
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable, creative experience to be truly fulfilling. Laravel attempts to take the pain out of development by easing common tasks used in the majority of web projects, such as:
+The `WelcomeEmailNotification` will fire with two notifications. One via normal mail and one via the SailtruChannel
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-Laravel is accessible, yet powerful, providing tools needed for large, robust applications. A superb combination of simplicity, elegance, and innovation give you tools you need to build any application with which you are tasked.
+#### Benefits over current implementation
 
-## Learning Laravel
+* Lightweight and Laravel friendly. Easy to understand and debug. 
 
-Laravel has the most extensive and thorough documentation and video tutorial library of any modern web application framework. The [Laravel documentation](https://laravel.com/docs) is thorough, complete, and makes it a breeze to get started learning the framework.
+* No need to swap out mail drivers: Sailthru notifications are not treated as emails so they don't interfere with our 
+current mail drivers. That makes it a non breaking change to normal mails. 
 
-If you're not in the mood to read, [Laracasts](https://laracasts.com) contains over 900 video tutorials on a range of topics including Laravel, modern PHP, unit testing, JavaScript, and more. Boost the skill level of yourself and your entire team by digging into our comprehensive video library.
+* Define the Email and Sailthru Messages on the same class. This makes it easier to see what is happening. No need 
+for configs to store various templates / overrides. 
 
-## Contributing
+* Run in Parallel. We can run in parallel, or do dynamic switching on the fly between Sailthru and Mail. Making it 
+easier to "warm" the IP / Account. Switching between channels is as easy as modifying the `via()` method on the 
+notification to either go by Mail, Sailthru or both. This can easily be done by a simple global `config('sailthru
+.enabled')
+` type of config, or a more specific one per domain / template / anything else. Switching to a different channel is 
+implemented by design, 
+so it's not complicated.  
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](http://laravel.com/docs/contributions).
+* Easy to send Admin mails via mail and other mails via Sailthru.
 
-## Security Vulnerabilities
+* Email templates using the mail method are beautifully styled already and super easy to implement / customize / 
+change. 
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell at taylor@laravel.com. All security vulnerabilities will be promptly addressed.
+* 100% fallback. If sailthru goes down, we switch our config off and start sending by normal mail. This *should* be 
+ the case with our current implementation too, but notifications would make it easier to maintain the two channels 
+ together.
+ 
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT).
+* Notifications are amazing to test with the Notifications fake. We can use the Notifications fake to test the flow 
+of our our 
+app, and only need to use Mailthief / Mailtrap / Sailthru Fake to test each notification at most, once. 
+Possibly, Developers could
+ do super fast testing while developing with no need to test the external service (Mailthief / Sailthru Test fake). 
+ The last leg to the external service can be run on builds only and can possibly be run in parallel with the rest of 
+ the tests to speed up feedback.  
+ 
+ * Extend past Mail / Sailthru: We can define instant Slack notifications, Push Notifications to our Web Apps, SMS to 
+ phones etc all super easily without having to re-write how / when a notification is triggered. Many major 
+ notifications channels are already supported out of the box like Slack and Push Notification services. 
+ 
+ 
+#### To Do
+*  I did this in just under an hour, it obviously needs more refinement to implement the Client better by a facade / 
+ service provider. But that's not too complex if we don't have to hack with our mail driver. 
+* Guest users would need a GuestUser class that uses the `notifiable` trait. This class would need to implement the 
+minim requirements for Sailthru (i.e. Store a Name, Email, etc). We could also make Advertisers Notifiable to send a 
+notification to an Advertiser (i.e. Not to a user - following different rules. ).  
+* I've ignored the rest of the Sailthru "features" like Mailing list management.
+ * Notification `toSailthru()` currently returns an instance of itself. In practice, we'd probably have a sperate 
+ `SailthruNotify` type of  Class which can encapsulate the templat name and variables better. 
