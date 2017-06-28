@@ -6,6 +6,7 @@ use App\Notifications\WelcomeEmailNotification;
 use App\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Foundation\Auth\RegistersUsers;
 
@@ -81,6 +82,7 @@ class RegisterController extends Controller
      */
     protected function registered(Request $request, User $user)
     {
+        Log::debug('In RegisterController registered Method');
         $user->notify(new WelcomeEmailNotification());
     }
 

@@ -8,8 +8,9 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Facades\Log;
 
-class WelcomeEmailNotification extends Notification
+class WelcomeEmailNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -30,6 +31,7 @@ class WelcomeEmailNotification extends Notification
      */
     public function __construct()
     {
+        Log::debug('In WelcomeEmailNotification Construct');
     }
 
     /**
@@ -40,6 +42,7 @@ class WelcomeEmailNotification extends Notification
      */
     public function via($notifiable)
     {
+        Log::debug('In WelcomeEmailNotification Via Method');
         return [
             'mail',
             SailthruChannel::class
@@ -52,6 +55,7 @@ class WelcomeEmailNotification extends Notification
      */
     public function toMail(User $user)
     {
+        Log::debug('In WelcomeEmailNotification toMail Method');
         return (new MailMessage)
                     ->subject("Hi {$user->name}, ")
                     ->line('Thanks for signing up to ' . config('app.name'))
@@ -76,6 +80,7 @@ class WelcomeEmailNotification extends Notification
 
     public function toSailthru(User $user)
     {
+        Log::debug('In WelcomeEmailNotification toSailthru Method');
         $this->sailThruTemplate = 'account activation employer';
         $this->sailThruParameters = [
             'account_activation_link' => 'http://www.brightermonday.com',
